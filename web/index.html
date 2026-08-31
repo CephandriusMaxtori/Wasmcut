@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wasmcut - WASM Video Editor</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎬 Wasmcut</h1>
+            <p>WASM/WASI Video Editor</p>
+        </header>
+
+        <main>
+            <div class="editor-section">
+                <!-- Timeline Controls -->
+                <div class="controls-panel">
+                    <h2>Timeline Controls</h2>
+                    <div class="button-group">
+                        <button id="createProjectBtn" class="btn btn-primary">New Project</button>
+                        <button id="getStateBtn" class="btn btn-secondary">Refresh State</button>
+                    </div>
+                    <div class="button-group">
+                        <button id="undoBtn" class="btn btn-small" disabled>↶ Undo</button>
+                        <button id="redoBtn" class="btn btn-small" disabled>↷ Redo</button>
+                    </div>
+                </div>
+
+                <!-- Timeline Visualization -->
+                <div class="timeline-container">
+                    <h2>Timeline</h2>
+                    <div class="timeline-header">
+                        <div class="ruler"></div>
+                    </div>
+                    <div class="timeline-tracks" id="timelineArea">
+                        <div class="placeholder">Load or create a project to see timeline</div>
+                    </div>
+                </div>
+
+                <!-- Project State Display -->
+                <div class="state-panel">
+                    <h2>Project State</h2>
+                    <div class="state-content" id="stateDisplay">
+                        <p>No project loaded</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <span id="statusText">Ready</span>
+                <span id="wasmStatus" class="status-indicator">Wasm: Uninitialized</span>
+            </div>
+        </main>
+
+        <footer>
+            <p>M2 - Web UI Proof of Concept</p>
+            <p><a href="https://github.com/CephandriusMaxtori/Wasmcut">GitHub Repository</a></p>
+        </footer>
+    </div>
+
+    <script src="wasm-loader.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

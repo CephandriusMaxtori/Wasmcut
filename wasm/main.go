@@ -4,72 +4,149 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"wasmcut/shared"
 )
 
-// Global project store (simplified for v1)
-var currentProject *shared.Project
+// Global timeline
+var timeline *shared.Timeline
+var lastError error
 
-//export CreateProject
-func CreateProject() *uint8 {
-	currentProject = &shared.Project{
-		ID:      "project-1",
-		Version: 1,
-		Tracks: []shared.Track{
-			{
-				ID:    "track-1",
-				Type:  "video",
-				Clips: []shared.Clip{},
-			},
-		},
-		Transitions: []shared.Transition{},
-		Effects:     []shared.Effect{},
-	}
-	result, err := json.Marshal(currentProject)
+func init() {
+	// Initialize timeline on load
+	timeline = shared.NewTimeline()
+	timeline.AddTrack("track-1", "video")
+}
+
+// Helper: serialize and store result
+func storeResult(data interface{}) []byte {
+	bytes, err := json.Marshal(data)
 	if err != nil {
-		fmt.Printf("Error marshaling project: %v\n", err)
+		lastError = err
 		return nil
 	}
-	// Return pointer to the first byte of the JSON
-	return &result[0]
+	return bytes
+}
+
+// ResponseWrapper wraps results for the host
+type ResponseWrapper struct {
+	Success bool        `json:"success"`
+	Error   string      `json:"error,omitempty"`
+	Data    interface{} `json:"data,omitempty"`
+}
+
+//export CreateProject
+func CreateProject() int32 {
+	timeline = shared.NewTimeline()
+	timeline.AddTrack("track-1", "video")
+
+	response := ResponseWrapper{
+		Success: true,
+		Data: map[string]interface{}{
+			"project_id": timeline.Project.ID,
+			"tracks":     len(timeline.Project.Tracks),
+		},
+	}
+	data := storeResult(response)
+	return int32(len(data))
 }
 
 //export GetTimelineState
-func GetTimelineState() *uint8 {
-	if currentProject == nil {
-		return nil
+func GetTimelineState() int32 {
+	if timeline == nil || timeline.Project == nil {
+		return 0
 	}
-	result, err := json.Marshal(currentProject)
-	if err != nil {
-		fmt.Printf("Error marshaling timeline: %v\n", err)
-		return nil
+
+	response := ResponseWrapper{
+		Success: true,
+		Data:    timeline.Project,
 	}
-	return &result[0]
+	data := storeResult(response)
+	return int32(len(data))
 }
 
 //export AddClip
-func AddClip(trackID string, mediaRef string, in float64, out float64, position float64) bool {
-	if currentProject == nil {
-		return false
+func AddClip(trackID string, mediaRef string, inTime float64, outTime float64, position float64) int32 {
+	if timeline == nil {
+		return -1
 	}
-	for i, track := range currentProject.Tracks {
-		if track.ID == trackID {
-			clip := shared.Clip{
-				ID:       fmt.Sprintf("clip-%d", len(track.Clips)+1),
-				MediaRef: mediaRef,
-				In:       in,
-				Out:      out,
-				Position: position,
-			}
-			currentProject.Tracks[i].Clips = append(currentProject.Tracks[i].Clips, clip)
-			return true
+
+	clipID := "clip-1" // Simplified for v1
+
+	cmd := &shared.AddClipCmd{
+		ID:      clipID,
+		TrackID: trackID,
+		Clip: shared.Clip{
+			ID:       clipID,
+			MediaRef: mediaRef,
+			In:       inTime,
+			Out:      outTime,
+			Position: position,
+		},
+	}
+
+	err := timeline.ExecuteCommand(cmd)
+	response := ResponseWrapper{
+		Success: err == nil,
+		Error:   errorStr(err),
+		Data: map[string]interface{}{
+			"clip_id": clipID,
+		},
+	}
+	data := storeResult(response)
+	return int32(len(data))
+}
+
+//export Undo
+func Undo() int32 {
+	if timeline == nil {
+		return -1
+	}
+
+	err := timeline.Undo()
+	response := ResponseWrapper{
+		Success: err == nil,
+		Error:   errorStr(err),
+	}
+	data := storeResult(response)
+	return int32(len(data))
+}
+
+//export Redo
+func Redo() int32 {
+	if timeline == nil {
+		return -1
+	}
+
+	err := timeline.Redo()
+	response := ResponseWrapper{
+		Success: err == nil,
+		Error:   errorStr(err),
+	}
+	data := storeResult(response)
+	return int32(len(data))
+}
+
+// Helper functions
+func errorStr(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
+}
+
+func getTrackByID(id string) *shared.Track {
+	if timeline == nil || timeline.Project == nil {
+		return nil
+	}
+	for i := range timeline.Project.Tracks {
+		if timeline.Project.Tracks[i].ID == id {
+			return &timeline.Project.Tracks[i]
 		}
 	}
-	return false
+	return nil
 }
 
 func main() {
-	// WASI entry point - required but not used in this architecture
+	// WASI/browser entry point - required but not used in this architecture
 	// Wasm module is called via host ABI only
 }
