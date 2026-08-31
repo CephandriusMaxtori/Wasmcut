@@ -1,0 +1,24 @@
+# Build artifacts
+dist/
+*.wasm
+*.so
+*.dylib
+
+# Go
+go.sum
+go.work.sum
+vendor/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Output
+*.log
