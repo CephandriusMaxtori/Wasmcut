@@ -449,16 +449,33 @@ body {
 }
 
 .ruler {
+    position: relative;
+    height: 100%;
     flex: 1;
     border-left: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    align-items: center;
-    padding-left: 10px;
-    color: #888;
     font-size: 0.85em;
 }
 
+.ruler-mark {
+    position: absolute;
+    top: 12px;
+    color: #888;
+    transform: translateX(-50%);
+    white-space: nowrap;
+}
+
+.ruler-mark::before {
+    content: "";
+    position: absolute;
+    top: 18px;
+    left: 50%;
+    width: 1px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.25);
+}
+
 .timeline-tracks {
+    position: relative;
     flex: 1;
     background: rgba(0, 0, 0, 0.3);
     border-radius: 0;
@@ -503,17 +520,21 @@ body {
 }
 
 .clips-container {
+    position: relative;
     flex: 1;
-    display: flex;
-    gap: 10px;
+    height: 54px;
     background: rgba(0, 0, 0, 0.2);
     border-radius: 3px;
     padding: 5px;
     min-height: 50px;
-    align-items: center;
+    overflow: hidden;
 }
 
 .clip {
+    position: absolute;
+    top: 5px;
+    bottom: 5px;
+    min-width: 0;
     background: linear-gradient(135deg, rgba(102, 126, 234, 0.6) 0%, rgba(118, 75, 162, 0.6) 100%);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 3px;
@@ -525,6 +546,27 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     font-size: 0.85em;
+}
+
+.playhead {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #ff6b6b;
+    box-shadow: 0 0 8px rgba(255, 107, 107, 0.65);
+    pointer-events: none;
+    z-index: 3;
+}
+
+.playhead::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -5px;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid #ff6b6b;
 }
 
 .clip:hover {
