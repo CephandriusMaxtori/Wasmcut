@@ -3,6 +3,7 @@ class WasmcutApp {
     constructor() {
         this.wasm = null;
         this.projectState = null;
+        this.projectCreated = false;
         this.init();
     }
 
@@ -38,6 +39,7 @@ class WasmcutApp {
 
             this.updateWasmStatus(true);
             this.setupEventListeners();
+            this.showStartScreen();
             this.log('Wasm module ready');
 
         } catch (error) {
@@ -48,10 +50,29 @@ class WasmcutApp {
     }
 
     setupEventListeners() {
-        document.getElementById('createProjectBtn').addEventListener('click', () => this.createProject());
+        document.getElementById('newProjectBtn').addEventListener('click', () => this.createProject());
+        document.getElementById('newProjectBtn2').addEventListener('click', () => this.returnToStart());
         document.getElementById('getStateBtn').addEventListener('click', () => this.refreshState());
         document.getElementById('undoBtn').addEventListener('click', () => this.undo());
         document.getElementById('redoBtn').addEventListener('click', () => this.redo());
+    }
+
+    showStartScreen() {
+        this.projectCreated = false;
+        document.getElementById('startScreen').style.display = 'flex';
+        document.getElementById('editorSection').style.display = 'none';
+    }
+
+    showEditor() {
+        this.projectCreated = true;
+        document.getElementById('startScreen').style.display = 'none';
+        document.getElementById('editorSection').style.display = 'block';
+    }
+
+    returnToStart() {
+        if (confirm('Are you sure you want to create a new project? Current project will be lost.')) {
+            this.showStartScreen();
+        }
     }
 
     async createProject() {
@@ -64,6 +85,7 @@ class WasmcutApp {
             const result = this.wasm.createProject();
             if (result.success) {
                 this.log('Project created successfully');
+                this.showEditor();
                 this.refreshState();
             } else {
                 this.log(`Error: ${result.error}`, 'error');
@@ -82,10 +104,8 @@ class WasmcutApp {
 
             const result = this.wasm.getTimelineState();
             if (result.success) {
-                // In a real implementation, we'd parse the JSON from Wasm memory
-                // For now, show the raw result
-                this.projectState = result.result;
-                this.displayState(result.result);
+                this.projectState = result;
+                this.displayState(result.data);
                 this.log('Timeline state updated');
             } else {
                 this.log(`Error: ${result.error}`, 'error');
@@ -125,41 +145,47 @@ class WasmcutApp {
         }
     }
 
-    displayState(state) {
+    displayState(response) {
         const stateDisplay = document.getElementById('stateDisplay');
         const timelineArea = document.getElementById('timelineArea');
 
-        if (!state) {
+        if (!response) {
             stateDisplay.textContent = 'No state available';
-            timelineArea.innerHTML = '<div class="placeholder">Load or create a project to see timeline</div>';
+            timelineArea.innerHTML = '<div class="placeholder">No project data</div>';
             return;
         }
 
-        // Display raw state as JSON (for development)
+        // Handle response format from Go functions
+        let stateData = response;
+        if (response.data) {
+            stateData = response.data;
+        }
+
+        // Display state as JSON (for development)
         try {
-            stateDisplay.textContent = JSON.stringify(state, null, 2);
+            stateDisplay.textContent = JSON.stringify(stateData, null, 2);
         } catch (error) {
-            stateDisplay.textContent = String(state);
+            stateDisplay.textContent = String(stateData);
         }
 
         // Render timeline visualization
-        this.renderTimeline(state);
+        this.renderTimeline(stateData);
     }
 
     renderTimeline(state) {
         const timelineArea = document.getElementById('timelineArea');
 
-        if (!state || typeof state !== 'number') {
-            timelineArea.innerHTML = '<div class="placeholder">Invalid state format</div>';
+        if (!state) {
+            timelineArea.innerHTML = '<div class="placeholder">No timeline data</div>';
             return;
         }
 
-        // For now, show a placeholder
-        // In a real implementation, we'd parse the actual timeline data
+        // For now, show a placeholder with the state data
+        // In a real implementation, we'd parse tracks and clips
         timelineArea.innerHTML = `
             <div class="placeholder">
-                <p>Wasm module returned: ${state}</p>
-                <p>Next: Parse timeline JSON from Wasm memory</p>
+                <p>Timeline active with ${state.tracks ? state.tracks.length : 0} track(s)</p>
+                <p><em>Clip editing coming soon...</em></p>
             </div>
         `;
     }
