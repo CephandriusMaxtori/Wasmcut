@@ -11,10 +11,11 @@ dist:
 	mkdir -p dist
 
 build-wasm: dist
-	GOOS=wasip1 GOARCH=wasm go build \
+	GOOS=js GOARCH=wasm go build \
 		-o dist/core.wasm \
 		-ldflags="-s -w" \
 		./wasm
+	cp "$$(go env GOROOT)/lib/wasm/wasm_exec.js" dist/wasm_exec.js
 
 test-wasm:
 	cd wasm && go test -v ./...

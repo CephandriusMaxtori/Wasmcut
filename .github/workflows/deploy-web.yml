@@ -23,7 +23,8 @@ jobs:
     - name: Build Wasm Module
       run: |
         mkdir -p dist
-        GOOS=wasip1 GOARCH=wasm go build -o dist/core.wasm -ldflags="-s -w" ./wasm
+        GOOS=js GOARCH=wasm go build -o dist/core.wasm -ldflags="-s -w" ./wasm
+        cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" dist/wasm_exec.js
     
     - name: Prepare Web Files
       run: |
@@ -33,6 +34,7 @@ jobs:
         cp web/app.js dist/web/
         cp web/wasm-loader.js dist/web/
         cp dist/core.wasm dist/web/
+        cp dist/wasm_exec.js dist/web/
     
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4

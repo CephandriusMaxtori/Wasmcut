@@ -16,7 +16,8 @@ A browser-based video editor interface for Wasmcut, running entirely in WebAssem
 1. Build the Wasm module:
 ```bash
 cd /workspaces/Wasmcut
-GOOS=wasip1 GOARCH=wasm go build -o web/core.wasm -ldflags="-s -w" ./wasm
+GOOS=js GOARCH=wasm go build -o web/core.wasm -ldflags="-s -w" ./wasm
+cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" web/wasm_exec.js
 ```
 
 2. Serve the web directory locally:

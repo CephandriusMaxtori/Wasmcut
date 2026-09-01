@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build script for compiling Wasm module to wasm32-wasip1
+# Build script for compiling the browser Wasm module
 
 set -e
 
@@ -15,15 +15,18 @@ fi
 # Create output directory
 mkdir -p "$PROJECT_ROOT/dist"
 
-echo "Building Wasmcut core to wasm32-wasip1..."
+echo "Building Wasmcut core for the browser..."
 
 cd "$PROJECT_ROOT/wasm"
 
-# Compile to wasm32-wasip1 (WASI Preview 1)
-GOOS=wasip1 GOARCH=wasm go build \
+# Compile to the Go JavaScript/Wasm runtime target.
+GOOS=js GOARCH=wasm go build \
     -o "$PROJECT_ROOT/dist/core.wasm" \
     -ldflags="-s -w" \
     main.go
 
 echo "✓ Build complete: dist/core.wasm"
 ls -lh "$PROJECT_ROOT/dist/core.wasm"
+
+cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" "$PROJECT_ROOT/dist/wasm_exec.js"
+echo "✓ Copied Go browser runtime: dist/wasm_exec.js"

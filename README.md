@@ -84,11 +84,9 @@ See [DESIGN.md](docs/DESIGN.md) for full architecture overview, including:
 # Timeline engine tests
 make test-wasm
 
-# Compile Wasm to wasm32-wasip1
-make build-wasm
-
-# Web UI (requires core.wasm in web/)
-cd web && python3 -m http.server
+# Build the browser bundle and serve it
+bash scripts/deploy.sh
+cd dist/web && python3 -m http.server
 ```
 
 ### Wasm Module Exports
@@ -120,7 +118,7 @@ bash scripts/deploy.sh
 
 | Component | Tech | Notes |
 |-----------|------|-------|
-| Wasm Core | Go + TinyGo | Target: wasm32-wasip1 (WASI Preview 1) |
+| Wasm Core | Go + TinyGo | Native host: wasm32-wasip1; browser: js/wasm |
 | Runtime | wasmtime | Embedded in native host (M3+) |
 | Web UI | HTML/CSS/JS | No framework, vanilla for simplicity |
 | Host (ref) | Go | Reference impl; FFmpeg + GPU rendering (future) |

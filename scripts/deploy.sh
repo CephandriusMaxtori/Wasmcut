@@ -7,7 +7,8 @@ echo "🔨 Building Wasmcut Web..."
 
 # Build Wasm module
 mkdir -p dist
-GOOS=wasip1 GOARCH=wasm go build -o dist/core.wasm -ldflags="-s -w" ./wasm
+GOOS=js GOARCH=wasm go build -o dist/core.wasm -ldflags="-s -w" ./wasm
+cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" dist/wasm_exec.js
 echo "✓ Wasm compiled"
 
 # Copy web files to dist
@@ -17,6 +18,7 @@ cp web/style.css dist/web/
 cp web/app.js dist/web/
 cp web/wasm-loader.js dist/web/
 cp dist/core.wasm dist/web/
+cp dist/wasm_exec.js dist/web/
 
 echo "✓ Web files copied to dist/web"
 echo ""

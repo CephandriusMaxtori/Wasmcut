@@ -13,10 +13,10 @@ class WasmcutApp {
             // Load Wasm module
             this.wasm = new WasmLoader();
             
-            // Try to load Wasm module from dist directory or web directory
+            // Try to load Wasm module from local directory or dist directory
             const wasmPaths = [
-                '../dist/core.wasm',
                 './core.wasm',
+                '../dist/core.wasm',
                 'https://cdn.jsdelivr.net/npm/wasmcut@latest/dist/core.wasm'
             ];
 

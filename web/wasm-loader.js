@@ -1,6 +1,11 @@
 // WasmLoader - handles loading and managing the Wasm module
 class WasmLoader {
     constructor() {
+        if (typeof Go === 'undefined') {
+            throw new Error('Go Wasm runtime is not loaded');
+        }
+
+        this.go = new Go();
         this.module = null;
         this.memory = null;
         this.instance = null;
@@ -19,13 +24,15 @@ class WasmLoader {
 
             const buffer = await response.arrayBuffer();
 
-            // Create WebAssembly module
-            this.module = await WebAssembly.instantiate(buffer, {
-                // Provide minimal environment - no WASI needed for v1
-                env: {}
-            });
+            // Go's browser target needs the import object from wasm_exec.js.
+            this.module = await WebAssembly.instantiate(buffer, this.go.importObject);
 
             this.instance = this.module.instance;
+
+            // Start Go's runtime without awaiting its long-lived run promise.
+            this.go.run(this.instance);
+            await new Promise((resolve) => setTimeout(resolve, 0));
+
             this.memory = this.instance.exports.memory;
 
             if (!this.memory) {

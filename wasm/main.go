@@ -147,6 +147,6 @@ func getTrackByID(id string) *shared.Track {
 }
 
 func main() {
-	// WASI/browser entry point - required but not used in this architecture
-	// Wasm module is called via host ABI only
+	// Keep the Go runtime alive so JavaScript can call the exported functions.
+	select {}
 }
