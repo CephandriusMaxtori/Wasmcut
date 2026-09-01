@@ -264,6 +264,14 @@ body {
     cursor: pointer;
 }
 
+.media-asset[draggable="true"] {
+    cursor: grab;
+}
+
+.media-asset[draggable="true"]:active {
+    cursor: grabbing;
+}
+
 .media-asset:hover,
 .media-asset.selected {
     border-color: rgba(102, 126, 234, 0.65);
@@ -530,6 +538,12 @@ body {
     overflow: hidden;
 }
 
+.clips-container.drop-target {
+    outline: 2px dashed rgba(81, 207, 102, 0.8);
+    outline-offset: -3px;
+    background: rgba(81, 207, 102, 0.1);
+}
+
 .clip {
     position: absolute;
     top: 5px;
@@ -546,6 +560,14 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     font-size: 0.85em;
+}
+
+.clip[draggable="true"] {
+    cursor: grab;
+}
+
+.clip[draggable="true"]:active {
+    cursor: grabbing;
 }
 
 .playhead {

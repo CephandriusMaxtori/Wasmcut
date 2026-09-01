@@ -162,6 +162,14 @@ class WasmLoader {
         }
     }
 
+    moveClip(clipID, oldTrackID, newTrackID, oldPosition, newPosition) {
+        try {
+            return this.call('moveClip', clipID, oldTrackID, newTrackID, oldPosition, newPosition);
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
     undo() {
         try {
             const result = this.call('undo');

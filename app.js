@@ -183,6 +183,10 @@ class WasmcutApp {
         `).join('');
         mediaBin.querySelectorAll('.media-asset').forEach(element => {
             element.addEventListener('click', () => this.selectMedia(element.dataset.mediaId));
+            element.addEventListener('dragstart', event => {
+                event.dataTransfer.setData('application/x-wasmcut-media', element.dataset.mediaId);
+                event.dataTransfer.effectAllowed = 'copy';
+            });
         });
     }
 
@@ -332,13 +336,13 @@ class WasmcutApp {
         this.renderTimelineRuler(timelineDuration);
         timelineArea.classList.toggle('has-content', clips.length > 0);
         timelineArea.innerHTML = tracks.map(track => `
-            <div class="track">
+            <div class="track" data-track-id="${track.id}">
                 <span class="track-label">${track.id}</span>
                 <div class="clips-container">
                     ${(track.clips || []).map(clip => {
                         const left = (clip.position / timelineDuration) * 100;
                         const width = ((clip.out - clip.in) / timelineDuration) * 100;
-                        return `<button class="clip" data-clip-id="${clip.id}" type="button" style="left: ${left}%; width: max(${width}%, 72px);">${this.escapeHtml(clip.media_ref)}</button>`;
+                        return `<button class="clip" draggable="true" data-clip-id="${clip.id}" data-track-id="${track.id}" data-position="${clip.position}" type="button" style="left: ${left}%; width: max(${width}%, 72px);">${this.escapeHtml(clip.media_ref)}</button>`;
                     }).join('') || '<span class="placeholder">Empty track</span>'}
                 </div>
             </div>
@@ -348,11 +352,28 @@ class WasmcutApp {
         playhead.style.left = `${Math.min(this.playheadTime / timelineDuration, 1) * 100}%`;
         timelineArea.appendChild(playhead);
         timelineArea.querySelectorAll('.clip').forEach(element => {
+            element.addEventListener('dragstart', event => {
+                event.stopPropagation();
+                event.dataTransfer.setData('application/x-wasmcut-clip', JSON.stringify({
+                    clipID: element.dataset.clipId,
+                    trackID: element.dataset.trackId,
+                    position: Number(element.dataset.position)
+                }));
+                event.dataTransfer.effectAllowed = 'move';
+            });
             element.addEventListener('click', () => {
                 const track = tracks.find(item => item.clips.some(clip => clip.id === element.dataset.clipId));
                 const clip = track && track.clips.find(item => item.id === element.dataset.clipId);
                 if (clip) this.selectClip(clip, track.id);
             });
+        });
+        timelineArea.querySelectorAll('.clips-container').forEach(container => {
+            container.addEventListener('dragover', event => {
+                event.preventDefault();
+                container.classList.add('drop-target');
+            });
+            container.addEventListener('dragleave', () => container.classList.remove('drop-target'));
+            container.addEventListener('drop', event => this.dropOnTimeline(event, container, tracks, timelineDuration));
         });
         timelineArea.onclick = (event) => {
             if (event.target.closest('.clip')) return;
@@ -370,6 +391,32 @@ class WasmcutApp {
             const time = index * step;
             return `<span class="ruler-mark" style="left: ${(time / duration) * 100}%">${time}s</span>`;
         }).join('');
+    }
+
+    dropOnTimeline(event, container, tracks, duration) {
+        event.preventDefault();
+        container.classList.remove('drop-target');
+        const bounds = container.getBoundingClientRect();
+        const position = Math.max(0, Math.round(((event.clientX - bounds.left) / bounds.width) * duration * 10) / 10);
+        const trackID = container.closest('.track').dataset.trackId;
+        const mediaID = event.dataTransfer.getData('application/x-wasmcut-media');
+        if (mediaID) {
+            const asset = this.mediaAssets.find(item => item.id === mediaID);
+            if (!asset) return;
+            document.getElementById('mediaRefInput').value = asset.url;
+            document.getElementById('clipPositionInput').value = position;
+            this.addClip({ preventDefault: () => {} });
+            return;
+        }
+        const clipData = event.dataTransfer.getData('application/x-wasmcut-clip');
+        if (!clipData) return;
+        const clip = JSON.parse(clipData);
+        const result = this.wasm.moveClip(clip.clipID, clip.trackID, trackID, clip.position, position);
+        if (result.success) {
+            this.playheadTime = position;
+            this.log('Clip moved');
+            this.refreshState();
+        } else this.log(`Error: ${result.error}`, 'error');
     }
 
     updateWasmStatus(ready) {
