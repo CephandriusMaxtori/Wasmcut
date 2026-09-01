@@ -146,6 +146,22 @@ class WasmLoader {
         }
     }
 
+    trimClip(clipID, trackID, oldIn, oldOut, newIn, newOut) {
+        try {
+            return this.call('trimClip', clipID, trackID, oldIn, oldOut, newIn, newOut);
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    deleteClip(clipID, trackID) {
+        try {
+            return this.call('deleteClip', clipID, trackID);
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
     undo() {
         try {
             const result = this.call('undo');
