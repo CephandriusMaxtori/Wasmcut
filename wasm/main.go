@@ -134,6 +134,19 @@ func deleteClip(this js.Value, args []js.Value) interface{} {
 	return jsonResponse(err == nil, errorStr(err), nil)
 }
 
+// moveClip changes a clip's timeline position or track.
+func moveClip(this js.Value, args []js.Value) interface{} {
+	if timeline == nil || len(args) < 5 {
+		return jsonResponse(false, "Invalid arguments or no project", nil)
+	}
+	cmd := &shared.MoveClipCmd{
+		ClipID: args[0].String(), OldTrackID: args[1].String(), NewTrackID: args[2].String(),
+		OldPosition: args[3].Float(), NewPosition: args[4].Float(),
+	}
+	err := timeline.ExecuteCommand(cmd)
+	return jsonResponse(err == nil, errorStr(err), nil)
+}
+
 // undo undoes the last action
 func undo(this js.Value, args []js.Value) interface{} {
 	if timeline == nil {
@@ -197,6 +210,7 @@ func main() {
 	js.Global().Set("addClip", js.FuncOf(addClip))
 	js.Global().Set("trimClip", js.FuncOf(trimClip))
 	js.Global().Set("deleteClip", js.FuncOf(deleteClip))
+	js.Global().Set("moveClip", js.FuncOf(moveClip))
 	js.Global().Set("undo", js.FuncOf(undo))
 	js.Global().Set("redo", js.FuncOf(redo))
 
