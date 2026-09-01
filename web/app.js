@@ -51,11 +51,19 @@ class WasmcutApp {
     }
 
     setupEventListeners() {
-        document.getElementById('newProjectBtn').addEventListener('click', () => this.createProject());
-        document.getElementById('newProjectBtn2').addEventListener('click', () => this.returnToStart());
-        document.getElementById('getStateBtn').addEventListener('click', () => this.refreshState());
-        document.getElementById('undoBtn').addEventListener('click', () => this.undo());
-        document.getElementById('redoBtn').addEventListener('click', () => this.redo());
+        const bind = (id, event, handler) => {
+            const element = document.getElementById(id);
+            if (element) element.addEventListener(event, handler);
+        };
+
+        bind('newProjectBtn', 'click', () => this.createProject());
+        bind('newProjectBtn2', 'click', () => this.createProject());
+        bind('getStateBtn', 'click', () => this.refreshState());
+        bind('undoBtn', 'click', () => this.undo());
+        bind('redoBtn', 'click', () => this.redo());
+        bind('addClipForm', 'submit', (event) => this.addClip(event));
+        bind('editClipForm', 'submit', (event) => this.trimSelectedClip(event));
+        bind('deleteClipBtn', 'click', () => this.deleteSelectedClip());
 
         // Mode selector buttons
         document.querySelectorAll('.mode-btn').forEach(btn => {
@@ -68,7 +76,8 @@ class WasmcutApp {
         document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+        const activeButton = document.querySelector(`[data-mode="${mode}"]`);
+        if (activeButton) activeButton.classList.add('active');
         
         // Handle mode switching (for future implementation)
         console.log('Switched to mode:', mode);
@@ -115,6 +124,65 @@ class WasmcutApp {
         } catch (error) {
             this.log(`Error creating project: ${error.message}`, 'error');
         }
+    }
+
+    addClip(event) {
+        event.preventDefault();
+        const mediaRef = document.getElementById('mediaRefInput').value.trim();
+        const inTime = Number(document.getElementById('clipInInput').value);
+        const outTime = Number(document.getElementById('clipOutInput').value);
+        const position = Number(document.getElementById('clipPositionInput').value);
+        if (!mediaRef || !Number.isFinite(inTime) || !Number.isFinite(outTime) || outTime <= inTime) {
+            this.log('Enter a media reference and a valid In/Out range', 'error');
+            return;
+        }
+        const result = this.wasm.addClip('track-1', mediaRef, inTime, outTime, position);
+        if (result.success) {
+            this.log('Clip added');
+            this.refreshState();
+        } else {
+            this.log(`Error: ${result.error}`, 'error');
+        }
+    }
+
+    selectClip(clip, trackID) {
+        this.selectedClip = { ...clip, trackID };
+        document.getElementById('clipEditor').hidden = false;
+        document.getElementById('selectedClipName').textContent = `${clip.id} · ${clip.media_ref}`;
+        document.getElementById('editInInput').value = clip.in;
+        document.getElementById('editOutInput').value = clip.out;
+        document.querySelectorAll('.clip.selected').forEach(element => element.classList.remove('selected'));
+        const selectedElement = document.querySelector(`[data-clip-id="${clip.id}"]`);
+        if (selectedElement) selectedElement.classList.add('selected');
+    }
+
+    trimSelectedClip(event) {
+        event.preventDefault();
+        if (!this.selectedClip) return;
+        const newIn = Number(document.getElementById('editInInput').value);
+        const newOut = Number(document.getElementById('editOutInput').value);
+        if (!Number.isFinite(newIn) || !Number.isFinite(newOut) || newOut <= newIn) {
+            this.log('Out must be greater than In', 'error');
+            return;
+        }
+        const result = this.wasm.trimClip(this.selectedClip.id, this.selectedClip.trackID, this.selectedClip.in, this.selectedClip.out, newIn, newOut);
+        if (result.success) {
+            this.selectedClip.in = newIn;
+            this.selectedClip.out = newOut;
+            this.log('Clip trimmed');
+            this.refreshState();
+        } else this.log(`Error: ${result.error}`, 'error');
+    }
+
+    deleteSelectedClip() {
+        if (!this.selectedClip) return;
+        const result = this.wasm.deleteClip(this.selectedClip.id, this.selectedClip.trackID);
+        if (result.success) {
+            this.selectedClip = null;
+            document.getElementById('clipEditor').hidden = true;
+            this.log('Clip deleted');
+            this.refreshState();
+        } else this.log(`Error: ${result.error}`, 'error');
     }
 
     async refreshState() {
@@ -202,14 +270,23 @@ class WasmcutApp {
             return;
         }
 
-        // For now, show a placeholder with the state data
-        // In a real implementation, we'd parse tracks and clips
-        timelineArea.innerHTML = `
-            <div class="placeholder">
-                <p>Timeline active with ${state.tracks ? state.tracks.length : 0} track(s)</p>
-                <p><em>Clip editing coming soon...</em></p>
+        const tracks = state.tracks || [];
+        timelineArea.classList.toggle('has-content', tracks.some(track => track.clips && track.clips.length));
+        timelineArea.innerHTML = tracks.map(track => `
+            <div class="track">
+                <span class="track-label">${track.id}</span>
+                <div class="clips-container">
+                    ${(track.clips || []).map(clip => `<button class="clip" data-clip-id="${clip.id}" type="button">${clip.id}: ${clip.media_ref} (${clip.in}s - ${clip.out}s)</button>`).join('') || '<span class="placeholder">Empty track</span>'}
+                </div>
             </div>
-        `;
+        `).join('') || '<div class="placeholder">No tracks</div>';
+        timelineArea.querySelectorAll('.clip').forEach(element => {
+            element.addEventListener('click', () => {
+                const track = tracks.find(item => item.clips.some(clip => clip.id === element.dataset.clipId));
+                const clip = track && track.clips.find(item => item.id === element.dataset.clipId);
+                if (clip) this.selectClip(clip, track.id);
+            });
+        });
     }
 
     updateWasmStatus(ready) {

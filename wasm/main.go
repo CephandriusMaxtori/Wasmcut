@@ -4,12 +4,14 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"syscall/js"
 	"wasmcut/shared"
 )
 
 // Global timeline
 var timeline *shared.Timeline
+var nextClipID int
 
 func init() {
 	// Initialize timeline on load
@@ -28,6 +30,7 @@ type ResponseWrapper struct {
 func createProject(this js.Value, args []js.Value) interface{} {
 	timeline = shared.NewTimeline()
 	timeline.AddTrack("track-1", "video")
+	nextClipID = 1
 
 	response := ResponseWrapper{
 		Success: true,
@@ -78,7 +81,8 @@ func addClip(this js.Value, args []js.Value) interface{} {
 	outTime := args[3].Float()
 	position := args[4].Float()
 
-	clipID := "clip-1" // Simplified for v1
+	clipID := fmt.Sprintf("clip-%d", nextClipID)
+	nextClipID++
 
 	cmd := &shared.AddClipCmd{
 		ID:      clipID,
@@ -103,6 +107,31 @@ func addClip(this js.Value, args []js.Value) interface{} {
 
 	bytes, _ := json.Marshal(response)
 	return string(bytes)
+}
+
+// trimClip updates a clip's source in/out points.
+func trimClip(this js.Value, args []js.Value) interface{} {
+	if timeline == nil || len(args) < 6 {
+		return jsonResponse(false, "Invalid arguments or no project", nil)
+	}
+
+	cmd := &shared.TrimClipCmd{
+		ClipID: args[0].String(), TrackID: args[1].String(),
+		OldIn: args[2].Float(), OldOut: args[3].Float(),
+		NewIn: args[4].Float(), NewOut: args[5].Float(),
+	}
+	err := timeline.ExecuteCommand(cmd)
+	return jsonResponse(err == nil, errorStr(err), nil)
+}
+
+// deleteClip removes a clip from the timeline.
+func deleteClip(this js.Value, args []js.Value) interface{} {
+	if timeline == nil || len(args) < 2 {
+		return jsonResponse(false, "Invalid arguments or no project", nil)
+	}
+	cmd := &shared.DeleteClipCmd{ClipID: args[0].String(), TrackID: args[1].String()}
+	err := timeline.ExecuteCommand(cmd)
+	return jsonResponse(err == nil, errorStr(err), nil)
 }
 
 // undo undoes the last action
@@ -155,11 +184,19 @@ func errorStr(err error) string {
 	return err.Error()
 }
 
+func jsonResponse(success bool, message string, data interface{}) string {
+	response := ResponseWrapper{Success: success, Error: message, Data: data}
+	bytes, _ := json.Marshal(response)
+	return string(bytes)
+}
+
 func main() {
 	// Register functions to be callable from JavaScript
 	js.Global().Set("createProject", js.FuncOf(createProject))
 	js.Global().Set("getTimelineState", js.FuncOf(getTimelineState))
 	js.Global().Set("addClip", js.FuncOf(addClip))
+	js.Global().Set("trimClip", js.FuncOf(trimClip))
+	js.Global().Set("deleteClip", js.FuncOf(deleteClip))
 	js.Global().Set("undo", js.FuncOf(undo))
 	js.Global().Set("redo", js.FuncOf(redo))
 

@@ -42,10 +42,34 @@
                     <div class="button-group">
                         <button id="getStateBtn" class="btn btn-secondary">Refresh</button>
                     </div>
+                    <form id="addClipForm" class="clip-form">
+                        <label for="mediaRefInput">Media</label>
+                        <input id="mediaRefInput" type="text" value="media://source.mp4" required>
+                        <div class="form-row">
+                            <label for="clipInInput">In <input id="clipInInput" type="number" min="0" step="0.1" value="0"></label>
+                            <label for="clipOutInput">Out <input id="clipOutInput" type="number" min="0.1" step="0.1" value="10"></label>
+                        </div>
+                        <label for="clipPositionInput">Position</label>
+                        <input id="clipPositionInput" type="number" min="0" step="0.1" value="0">
+                        <button type="submit" class="btn btn-primary">Add Clip</button>
+                    </form>
                     <div class="button-group">
                         <button id="undoBtn" class="btn btn-small" disabled>↶ Undo</button>
                         <button id="redoBtn" class="btn btn-small" disabled>↷ Redo</button>
                     </div>
+                </div>
+
+                <div class="panel-section" id="clipEditor" hidden>
+                    <h3>Selected Clip</h3>
+                    <p id="selectedClipName" class="selected-clip-name"></p>
+                    <form id="editClipForm" class="clip-form">
+                        <div class="form-row">
+                            <label for="editInInput">In <input id="editInInput" type="number" min="0" step="0.1"></label>
+                            <label for="editOutInput">Out <input id="editOutInput" type="number" min="0.1" step="0.1"></label>
+                        </div>
+                        <button type="submit" class="btn btn-secondary">Apply Trim</button>
+                        <button type="button" id="deleteClipBtn" class="btn btn-danger">Delete Clip</button>
+                    </form>
                 </div>
 
                 <div class="panel-section">
