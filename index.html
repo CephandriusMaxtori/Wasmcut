@@ -38,6 +38,15 @@
             <!-- Left Panel: Controls and Properties -->
             <div class="left-panel">
                 <div class="panel-section">
+                    <h3>Media Bin</h3>
+                    <input id="mediaFileInput" class="visually-hidden" type="file" accept="video/*,image/*" multiple>
+                    <button id="importMediaBtn" class="btn btn-secondary import-btn" type="button">Import Video or Image</button>
+                    <div id="mediaBin" class="media-bin">
+                        <p class="placeholder">No media imported</p>
+                    </div>
+                </div>
+
+                <div class="panel-section">
                     <h3>Controls</h3>
                     <div class="button-group">
                         <button id="getStateBtn" class="btn btn-secondary">Refresh</button>

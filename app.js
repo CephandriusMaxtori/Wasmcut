@@ -5,6 +5,8 @@ class WasmcutApp {
         this.projectState = null;
         this.projectCreated = false;
         this.currentMode = 'editing';
+        this.mediaAssets = [];
+        this.selectedMedia = null;
         this.init();
     }
 
@@ -64,6 +66,8 @@ class WasmcutApp {
         bind('addClipForm', 'submit', (event) => this.addClip(event));
         bind('editClipForm', 'submit', (event) => this.trimSelectedClip(event));
         bind('deleteClipBtn', 'click', () => this.deleteSelectedClip());
+        bind('importMediaBtn', 'click', () => document.getElementById('mediaFileInput')?.click());
+        bind('mediaFileInput', 'change', (event) => this.importMedia(event));
 
         // Mode selector buttons
         document.querySelectorAll('.mode-btn').forEach(btn => {
@@ -143,6 +147,56 @@ class WasmcutApp {
         } else {
             this.log(`Error: ${result.error}`, 'error');
         }
+    }
+
+    importMedia(event) {
+        const files = Array.from(event.target.files || []);
+        files.forEach(file => {
+            if (!file.type.startsWith('video/') && !file.type.startsWith('image/')) return;
+            const asset = {
+                id: `media-${Date.now()}-${this.mediaAssets.length}`,
+                name: file.name,
+                type: file.type,
+                url: URL.createObjectURL(file)
+            };
+            this.mediaAssets.push(asset);
+        });
+        event.target.value = '';
+        this.renderMediaBin();
+        if (files.length) this.log(`${files.length} media file(s) imported`);
+    }
+
+    renderMediaBin() {
+        const mediaBin = document.getElementById('mediaBin');
+        if (!mediaBin) return;
+        if (!this.mediaAssets.length) {
+            mediaBin.innerHTML = '<p class="placeholder">No media imported</p>';
+            return;
+        }
+        mediaBin.innerHTML = this.mediaAssets.map(asset => `
+            <button class="media-asset${this.selectedMedia?.id === asset.id ? ' selected' : ''}" data-media-id="${asset.id}" type="button">
+                <span class="media-thumb ${asset.type.startsWith('image/') ? 'image-thumb' : 'video-thumb'}">${asset.type.startsWith('image/') ? 'IMG' : 'VID'}</span>
+                <span class="media-asset-name" title="${this.escapeHtml(asset.name)}">${this.escapeHtml(asset.name)}</span>
+                <span class="media-add" aria-hidden="true">+</span>
+            </button>
+        `).join('');
+        mediaBin.querySelectorAll('.media-asset').forEach(element => {
+            element.addEventListener('click', () => this.selectMedia(element.dataset.mediaId));
+        });
+    }
+
+    selectMedia(assetID) {
+        this.selectedMedia = this.mediaAssets.find(asset => asset.id === assetID);
+        if (!this.selectedMedia) return;
+        document.getElementById('mediaRefInput').value = this.selectedMedia.url;
+        this.renderMediaBin();
+        this.log(`${this.selectedMedia.name} selected`);
+    }
+
+    escapeHtml(value) {
+        return value.replace(/[&<>"']/g, character => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+        }[character]));
     }
 
     selectClip(clip, trackID) {
