@@ -225,6 +225,88 @@ body {
     margin-bottom: 0;
 }
 
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.import-btn {
+    width: 100%;
+}
+
+.media-bin {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 12px;
+    max-height: 190px;
+    overflow-y: auto;
+}
+
+.media-asset {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 6px;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.04);
+    color: #ddd;
+    text-align: left;
+    cursor: pointer;
+}
+
+.media-asset:hover,
+.media-asset.selected {
+    border-color: rgba(102, 126, 234, 0.65);
+    background: rgba(102, 126, 234, 0.14);
+}
+
+.media-thumb {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 28px;
+    flex-shrink: 0;
+    border-radius: 3px;
+    font-size: 0.58em;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+.image-thumb {
+    background: #c77d4d;
+    color: #fff1e8;
+}
+
+.video-thumb {
+    background: #5967d9;
+    color: #eef0ff;
+}
+
+.media-asset-name {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.78em;
+}
+
+.media-add {
+    color: #aab1ff;
+    font-size: 1.2em;
+    line-height: 1;
+}
+
 .clip-form {
     display: flex;
     flex-direction: column;
