@@ -7,6 +7,7 @@ class WasmcutApp {
         this.currentMode = 'editing';
         this.mediaAssets = [];
         this.selectedMedia = null;
+        this.playheadTime = 0;
         this.init();
     }
 
@@ -325,15 +326,27 @@ class WasmcutApp {
         }
 
         const tracks = state.tracks || [];
-        timelineArea.classList.toggle('has-content', tracks.some(track => track.clips && track.clips.length));
+        const clips = tracks.flatMap(track => track.clips || []);
+        const timelineDuration = Math.max(30, ...clips.map(clip => clip.position + clip.out - clip.in), 0);
+        this.timelineDuration = timelineDuration;
+        this.renderTimelineRuler(timelineDuration);
+        timelineArea.classList.toggle('has-content', clips.length > 0);
         timelineArea.innerHTML = tracks.map(track => `
             <div class="track">
                 <span class="track-label">${track.id}</span>
                 <div class="clips-container">
-                    ${(track.clips || []).map(clip => `<button class="clip" data-clip-id="${clip.id}" type="button">${clip.id}: ${clip.media_ref} (${clip.in}s - ${clip.out}s)</button>`).join('') || '<span class="placeholder">Empty track</span>'}
+                    ${(track.clips || []).map(clip => {
+                        const left = (clip.position / timelineDuration) * 100;
+                        const width = ((clip.out - clip.in) / timelineDuration) * 100;
+                        return `<button class="clip" data-clip-id="${clip.id}" type="button" style="left: ${left}%; width: max(${width}%, 72px);">${this.escapeHtml(clip.media_ref)}</button>`;
+                    }).join('') || '<span class="placeholder">Empty track</span>'}
                 </div>
             </div>
         `).join('') || '<div class="placeholder">No tracks</div>';
+        const playhead = document.createElement('div');
+        playhead.className = 'playhead';
+        playhead.style.left = `${Math.min(this.playheadTime / timelineDuration, 1) * 100}%`;
+        timelineArea.appendChild(playhead);
         timelineArea.querySelectorAll('.clip').forEach(element => {
             element.addEventListener('click', () => {
                 const track = tracks.find(item => item.clips.some(clip => clip.id === element.dataset.clipId));
@@ -341,6 +354,22 @@ class WasmcutApp {
                 if (clip) this.selectClip(clip, track.id);
             });
         });
+        timelineArea.onclick = (event) => {
+            if (event.target.closest('.clip')) return;
+            const bounds = timelineArea.getBoundingClientRect();
+            this.playheadTime = Math.max(0, Math.min(timelineDuration, ((event.clientX - bounds.left) / bounds.width) * timelineDuration));
+            this.renderTimeline(state);
+        };
+    }
+
+    renderTimelineRuler(duration) {
+        const ruler = document.getElementById('timelineRuler');
+        if (!ruler) return;
+        const step = duration > 60 ? 15 : 5;
+        ruler.innerHTML = Array.from({ length: Math.floor(duration / step) + 1 }, (_, index) => {
+            const time = index * step;
+            return `<span class="ruler-mark" style="left: ${(time / duration) * 100}%">${time}s</span>`;
+        }).join('');
     }
 
     updateWasmStatus(ready) {
