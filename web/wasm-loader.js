@@ -29,14 +29,34 @@ class WasmLoader {
 
             this.instance = this.module.instance;
 
+            // Log available exports for debugging
+            const exportedNames = Object.keys(this.instance.exports);
+            console.log('Wasm exports:', exportedNames.join(', '));
+
             // Start Go's runtime without awaiting its long-lived run promise.
             this.go.run(this.instance);
             await new Promise((resolve) => setTimeout(resolve, 0));
 
+            // Try to get memory - it may be named differently or managed by Go runtime
             this.memory = this.instance.exports.memory;
+            
+            if (!this.memory && this.go.mem) {
+                // Fallback: use Go runtime's memory buffer if available
+                this.memory = this.go.mem;
+            }
 
-            if (!this.memory) {
-                throw new Error('Wasm module does not export memory');
+            // Log memory status for debugging
+            if (this.memory) {
+                console.log('✓ Memory available, size:', this.memory.buffer.byteLength, 'bytes');
+            } else {
+                console.warn('⚠ Memory not directly available - some features may be limited');
+            }
+
+            // Check for expected exported functions
+            const expectedFuncs = ['CreateProject', 'GetTimelineState', 'AddClip', 'Undo', 'Redo'];
+            const missingFuncs = expectedFuncs.filter(fn => !this.instance.exports[fn]);
+            if (missingFuncs.length > 0) {
+                console.warn('⚠ Missing exported functions:', missingFuncs.join(', '));
             }
 
             console.log('✓ Wasm module loaded successfully');
@@ -48,17 +68,27 @@ class WasmLoader {
     }
 
     call(functionName, ...args) {
-        if (!this.instance) {
-            throw new Error('Wasm module not loaded');
-        }
+        // In Go's js/wasm target, functions are registered on the global scope
+        const func = typeof window !== 'undefined' 
+            ? window[functionName] 
+            : globalThis[functionName];
 
-        const func = this.instance.exports[functionName];
-        if (!func) {
-            throw new Error(`Function ${functionName} not found in Wasm module`);
+        if (!func || typeof func !== 'function') {
+            throw new Error(`Function ${functionName} not found`);
         }
 
         try {
             const result = func(...args);
+            
+            // Parse JSON response if it's a string (from Go)
+            if (typeof result === 'string') {
+                try {
+                    return JSON.parse(result);
+                } catch (e) {
+                    return { success: true, data: result };
+                }
+            }
+            
             return result;
         } catch (error) {
             console.error(`Error calling ${functionName}:`, error);
@@ -68,22 +98,31 @@ class WasmLoader {
 
     readMemory(offset, length) {
         if (!this.memory) {
-            throw new Error('Memory not available');
+            console.warn('Memory not available');
+            return '';
         }
 
-        const buffer = new Uint8Array(this.memory.buffer, offset, length);
-        return new TextDecoder().decode(buffer);
+        try {
+            const buffer = new Uint8Array(this.memory.buffer, offset, length);
+            return new TextDecoder().decode(buffer);
+        } catch (error) {
+            console.error('Error reading memory:', error);
+            return '';
+        }
     }
 
     getMemory() {
+        if (!this.memory) {
+            return new Uint8Array(0);
+        }
         return new Uint8Array(this.memory.buffer);
     }
 
     // Helper functions for common operations
     createProject() {
         try {
-            const result = this.call('CreateProject');
-            return { success: true, result };
+            const result = this.call('createProject');
+            return result;
         } catch (error) {
             return { success: false, error: error.message };
         }
@@ -91,8 +130,8 @@ class WasmLoader {
 
     getTimelineState() {
         try {
-            const result = this.call('GetTimelineState');
-            return { success: true, result };
+            const result = this.call('getTimelineState');
+            return result;
         } catch (error) {
             return { success: false, error: error.message };
         }
@@ -100,8 +139,8 @@ class WasmLoader {
 
     addClip(trackID, mediaRef, inTime, outTime, position) {
         try {
-            const result = this.call('AddClip', trackID, mediaRef, inTime, outTime, position);
-            return { success: true, result };
+            const result = this.call('addClip', trackID, mediaRef, inTime, outTime, position);
+            return result;
         } catch (error) {
             return { success: false, error: error.message };
         }
@@ -109,8 +148,8 @@ class WasmLoader {
 
     undo() {
         try {
-            const result = this.call('Undo');
-            return { success: true, result };
+            const result = this.call('undo');
+            return result;
         } catch (error) {
             return { success: false, error: error.message };
         }
@@ -118,8 +157,8 @@ class WasmLoader {
 
     redo() {
         try {
-            const result = this.call('Redo');
-            return { success: true, result };
+            const result = this.call('redo');
+            return result;
         } catch (error) {
             return { success: false, error: error.message };
         }

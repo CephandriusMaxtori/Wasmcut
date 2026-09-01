@@ -4,27 +4,17 @@ package main
 
 import (
 	"encoding/json"
+	"syscall/js"
 	"wasmcut/shared"
 )
 
 // Global timeline
 var timeline *shared.Timeline
-var lastError error
 
 func init() {
 	// Initialize timeline on load
 	timeline = shared.NewTimeline()
 	timeline.AddTrack("track-1", "video")
-}
-
-// Helper: serialize and store result
-func storeResult(data interface{}) []byte {
-	bytes, err := json.Marshal(data)
-	if err != nil {
-		lastError = err
-		return nil
-	}
-	return bytes
 }
 
 // ResponseWrapper wraps results for the host
@@ -34,8 +24,8 @@ type ResponseWrapper struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
-//export CreateProject
-func CreateProject() int32 {
+// createProject creates a new timeline project
+func createProject(this js.Value, args []js.Value) interface{} {
 	timeline = shared.NewTimeline()
 	timeline.AddTrack("track-1", "video")
 
@@ -46,29 +36,47 @@ func CreateProject() int32 {
 			"tracks":     len(timeline.Project.Tracks),
 		},
 	}
-	data := storeResult(response)
-	return int32(len(data))
+
+	bytes, _ := json.Marshal(response)
+	return string(bytes)
 }
 
-//export GetTimelineState
-func GetTimelineState() int32 {
+// getTimelineState returns the current project state as JSON
+func getTimelineState(this js.Value, args []js.Value) interface{} {
 	if timeline == nil || timeline.Project == nil {
-		return 0
+		response := ResponseWrapper{
+			Success: false,
+			Error:   "No project loaded",
+		}
+		bytes, _ := json.Marshal(response)
+		return string(bytes)
 	}
 
 	response := ResponseWrapper{
 		Success: true,
 		Data:    timeline.Project,
 	}
-	data := storeResult(response)
-	return int32(len(data))
+
+	bytes, _ := json.Marshal(response)
+	return string(bytes)
 }
 
-//export AddClip
-func AddClip(trackID string, mediaRef string, inTime float64, outTime float64, position float64) int32 {
-	if timeline == nil {
-		return -1
+// addClip adds a clip to a track
+func addClip(this js.Value, args []js.Value) interface{} {
+	if timeline == nil || len(args) < 5 {
+		response := ResponseWrapper{
+			Success: false,
+			Error:   "Invalid arguments or no project",
+		}
+		bytes, _ := json.Marshal(response)
+		return string(bytes)
 	}
+
+	trackID := args[0].String()
+	mediaRef := args[1].String()
+	inTime := args[2].Float()
+	outTime := args[3].Float()
+	position := args[4].Float()
 
 	clipID := "clip-1" // Simplified for v1
 
@@ -92,14 +100,20 @@ func AddClip(trackID string, mediaRef string, inTime float64, outTime float64, p
 			"clip_id": clipID,
 		},
 	}
-	data := storeResult(response)
-	return int32(len(data))
+
+	bytes, _ := json.Marshal(response)
+	return string(bytes)
 }
 
-//export Undo
-func Undo() int32 {
+// undo undoes the last action
+func undo(this js.Value, args []js.Value) interface{} {
 	if timeline == nil {
-		return -1
+		response := ResponseWrapper{
+			Success: false,
+			Error:   "No project loaded",
+		}
+		bytes, _ := json.Marshal(response)
+		return string(bytes)
 	}
 
 	err := timeline.Undo()
@@ -107,14 +121,20 @@ func Undo() int32 {
 		Success: err == nil,
 		Error:   errorStr(err),
 	}
-	data := storeResult(response)
-	return int32(len(data))
+
+	bytes, _ := json.Marshal(response)
+	return string(bytes)
 }
 
-//export Redo
-func Redo() int32 {
+// redo redoes the last undone action
+func redo(this js.Value, args []js.Value) interface{} {
 	if timeline == nil {
-		return -1
+		response := ResponseWrapper{
+			Success: false,
+			Error:   "No project loaded",
+		}
+		bytes, _ := json.Marshal(response)
+		return string(bytes)
 	}
 
 	err := timeline.Redo()
@@ -122,8 +142,9 @@ func Redo() int32 {
 		Success: err == nil,
 		Error:   errorStr(err),
 	}
-	data := storeResult(response)
-	return int32(len(data))
+
+	bytes, _ := json.Marshal(response)
+	return string(bytes)
 }
 
 // Helper functions
@@ -134,19 +155,14 @@ func errorStr(err error) string {
 	return err.Error()
 }
 
-func getTrackByID(id string) *shared.Track {
-	if timeline == nil || timeline.Project == nil {
-		return nil
-	}
-	for i := range timeline.Project.Tracks {
-		if timeline.Project.Tracks[i].ID == id {
-			return &timeline.Project.Tracks[i]
-		}
-	}
-	return nil
-}
-
 func main() {
-	// Keep the Go runtime alive so JavaScript can call the exported functions.
+	// Register functions to be callable from JavaScript
+	js.Global().Set("createProject", js.FuncOf(createProject))
+	js.Global().Set("getTimelineState", js.FuncOf(getTimelineState))
+	js.Global().Set("addClip", js.FuncOf(addClip))
+	js.Global().Set("undo", js.FuncOf(undo))
+	js.Global().Set("redo", js.FuncOf(redo))
+
+	// Keep the Go runtime alive so JavaScript can call the registered functions
 	select {}
 }
