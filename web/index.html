@@ -14,12 +14,31 @@
         </header>
 
         <main>
-            <div class="editor-section">
+            <!-- Start Screen -->
+            <div id="startScreen" class="start-screen">
+                <div class="start-screen-content">
+                    <h2>Welcome to Wasmcut</h2>
+                    <p>A WebAssembly video editor running entirely in your browser</p>
+                    <button id="newProjectBtn" class="btn btn-primary btn-large">+ New Project</button>
+                </div>
+            </div>
+
+            <!-- Editor Section (hidden until project created) -->
+            <div id="editorSection" class="editor-section" style="display: none;">
+                <!-- Header with project info and controls -->
+                <div class="editor-header">
+                    <div class="project-info">
+                        <h3>Project: <span id="projectName">Untitled</span></h3>
+                    </div>
+                    <div class="editor-actions">
+                        <button id="newProjectBtn2" class="btn btn-secondary btn-small">New Project</button>
+                    </div>
+                </div>
+
                 <!-- Timeline Controls -->
                 <div class="controls-panel">
                     <h2>Timeline Controls</h2>
                     <div class="button-group">
-                        <button id="createProjectBtn" class="btn btn-primary">New Project</button>
                         <button id="getStateBtn" class="btn btn-secondary">Refresh State</button>
                     </div>
                     <div class="button-group">
@@ -35,7 +54,7 @@
                         <div class="ruler"></div>
                     </div>
                     <div class="timeline-tracks" id="timelineArea">
-                        <div class="placeholder">Load or create a project to see timeline</div>
+                        <div class="placeholder">Timeline will appear here</div>
                     </div>
                 </div>
 
