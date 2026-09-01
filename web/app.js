@@ -4,6 +4,7 @@ class WasmcutApp {
         this.wasm = null;
         this.projectState = null;
         this.projectCreated = false;
+        this.currentMode = 'editing';
         this.init();
     }
 
@@ -55,6 +56,23 @@ class WasmcutApp {
         document.getElementById('getStateBtn').addEventListener('click', () => this.refreshState());
         document.getElementById('undoBtn').addEventListener('click', () => this.undo());
         document.getElementById('redoBtn').addEventListener('click', () => this.redo());
+
+        // Mode selector buttons
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => this.switchMode(e.target.dataset.mode));
+        });
+    }
+
+    switchMode(mode) {
+        // Update active button
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+        
+        // Handle mode switching (for future implementation)
+        console.log('Switched to mode:', mode);
+        this.currentMode = mode;
     }
 
     showStartScreen() {
@@ -70,7 +88,11 @@ class WasmcutApp {
     }
 
     returnToStart() {
-        if (confirm('Are you sure you want to create a new project? Current project will be lost.')) {
+        if (this.projectCreated) {
+            if (confirm('Are you sure you want to create a new project? Current project will be lost.')) {
+                this.showStartScreen();
+            }
+        } else {
             this.showStartScreen();
         }
     }

@@ -7,39 +7,40 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🎬 Wasmcut</h1>
-            <p>WASM/WASI Video Editor</p>
+    <div class="app-container">
+        <!-- Top Header Bar -->
+        <header class="app-header">
+            <div class="header-left">
+                <h1 class="app-title">🎬 Wasmcut</h1>
+                <span class="project-name" id="projectName">Untitled Project</span>
+            </div>
+            <div class="header-right">
+                <div class="mode-selector">
+                    <button class="mode-btn active" data-mode="editing">Editing</button>
+                    <button class="mode-btn" data-mode="preview">Preview</button>
+                    <button class="mode-btn" data-mode="export">Export</button>
+                </div>
+                <button id="newProjectBtn" class="btn btn-small">New Project</button>
+            </div>
         </header>
 
-        <main>
-            <!-- Start Screen -->
-            <div id="startScreen" class="start-screen">
-                <div class="start-screen-content">
-                    <h2>Welcome to Wasmcut</h2>
-                    <p>A WebAssembly video editor running entirely in your browser</p>
-                    <button id="newProjectBtn" class="btn btn-primary btn-large">+ New Project</button>
-                </div>
+        <!-- Start Screen -->
+        <div id="startScreen" class="start-screen">
+            <div class="start-screen-content">
+                <h2>Welcome to Wasmcut</h2>
+                <p>A WebAssembly video editor running entirely in your browser</p>
+                <button id="newProjectBtn2" class="btn btn-primary btn-large">+ New Project</button>
             </div>
+        </div>
 
-            <!-- Editor Section (hidden until project created) -->
-            <div id="editorSection" class="editor-section" style="display: none;">
-                <!-- Header with project info and controls -->
-                <div class="editor-header">
-                    <div class="project-info">
-                        <h3>Project: <span id="projectName">Untitled</span></h3>
-                    </div>
-                    <div class="editor-actions">
-                        <button id="newProjectBtn2" class="btn btn-secondary btn-small">New Project</button>
-                    </div>
-                </div>
-
-                <!-- Timeline Controls -->
-                <div class="controls-panel">
-                    <h2>Timeline Controls</h2>
+        <!-- Editor Layout (hidden until project created) -->
+        <div id="editorSection" class="editor-layout" style="display: none;">
+            <!-- Left Panel: Controls and Properties -->
+            <div class="left-panel">
+                <div class="panel-section">
+                    <h3>Controls</h3>
                     <div class="button-group">
-                        <button id="getStateBtn" class="btn btn-secondary">Refresh State</button>
+                        <button id="getStateBtn" class="btn btn-secondary">Refresh</button>
                     </div>
                     <div class="button-group">
                         <button id="undoBtn" class="btn btn-small" disabled>↶ Undo</button>
@@ -47,33 +48,48 @@
                     </div>
                 </div>
 
-                <!-- Timeline Visualization -->
-                <div class="timeline-container">
-                    <h2>Timeline</h2>
-                    <div class="timeline-header">
-                        <div class="ruler"></div>
-                    </div>
-                    <div class="timeline-tracks" id="timelineArea">
-                        <div class="placeholder">Timeline will appear here</div>
-                    </div>
-                </div>
-
-                <!-- Project State Display -->
-                <div class="state-panel">
-                    <h2>Project State</h2>
+                <div class="panel-section">
+                    <h3>Project State</h3>
                     <div class="state-content" id="stateDisplay">
-                        <p>No project loaded</p>
+                        <p>No project data</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Status Bar -->
-            <div class="status-bar">
-                <span id="statusText">Ready</span>
-                <span id="wasmStatus" class="status-indicator">Wasm: Uninitialized</span>
-            </div>
-        </main>
+            <!-- Main Content Area: Preview and Timeline -->
+            <div class="main-content">
+                <!-- Preview Area -->
+                <div class="preview-area">
+                    <div class="preview-window" id="previewWindow">
+                        <div class="preview-placeholder">
+                            <p>Video Preview</p>
+                            <p style="font-size: 0.9em; color: #888; margin-top: 10px;">1920 x 1080</p>
+                        </div>
+                    </div>
+                </div>
 
+                <!-- Timeline Section -->
+                <div class="timeline-section">
+                    <div class="timeline-container">
+                        <div class="timeline-header">
+                            <span class="timeline-label">Timeline</span>
+                            <div class="ruler"></div>
+                        </div>
+                        <div class="timeline-tracks" id="timelineArea">
+                            <div class="placeholder">Click 'Refresh' to load timeline</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <span id="statusText">Ready</span>
+            <span id="wasmStatus" class="status-indicator">Wasm: Uninitialized</span>
+        </div>
+
+        <!-- Footer -->
         <footer>
             <p>M2 - Web UI Proof of Concept</p>
             <p><a href="https://github.com/CephandriusMaxtori/Wasmcut">GitHub Repository</a></p>
